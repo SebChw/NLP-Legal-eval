@@ -1,13 +1,27 @@
+import zipfile
+from io import BytesIO
 from pathlib import Path
-from typing import List
 
-from datasets import ClassLabel, DatasetDict, Features, Sequence, Value, load_dataset
+import requests
+from datasets import DatasetDict, load_dataset
 from tokenizers.pre_tokenizers import WhitespaceSplit
 
-from constants import DATA_PATH, DEV_JUDG, DEV_PREA, TRAIN_JUDG, TRAIN_PREA
+from legal_eval.constants import (DEV_JUDG, DEV_PREA, TEST_URL, TRAIN_JUDG,
+                                  TRAIN_PREA, TRAIN_URL)
 
 
-def get_hf_dataset(columns_to_remove=["id", "meta"]):
+def download_data(data_path: Path, force_download=False):
+    if data_path.exists() and not force_download:
+        return
+    
+    data_path.mkdir(exist_ok=True)
+    for zip_file_url in [TRAIN_URL, TEST_URL]:
+        r = requests.get(zip_file_url, stream=True)
+        z = zipfile.ZipFile(BytesIO(r.content))
+        z.extractall(data_path)
+
+
+def get_hf_dataset(data_path: Path, columns_to_remove=["id", "meta"]):
     """Returns a HuggingFace DatasetDict object with train and test splits
 
     Args:
@@ -15,13 +29,13 @@ def get_hf_dataset(columns_to_remove=["id", "meta"]):
         If you don't want to remove anything pass an empty list.
     """
 
-    if not DATA_PATH.exists():
-        raise FileNotFoundError("Please run get_data.py first to download the data")
+    if not data_path.exists():
+        raise FileNotFoundError("Please run legal_eval.data.download_data first to download the data")
 
-    train_dataset = load_dataset("json", data_files=[str(TRAIN_JUDG), str(TRAIN_PREA)])[
+    train_dataset = load_dataset("json", data_files=[str(data_path / TRAIN_JUDG), str(data_path / TRAIN_PREA)])[
         "train"
     ]
-    test_dataset = load_dataset("json", data_files=[str(DEV_JUDG), str(DEV_PREA)])[
+    test_dataset = load_dataset("json", data_files=[str(data_path / DEV_JUDG), str(data_path / DEV_PREA)])[
         "train"
     ]
 
@@ -97,73 +111,3 @@ def parse_to_ner(dataset):
 
     return dataset.map(get_labels, remove_columns=["text", "annotations"])
 
-
-def words_to_offsets(words: List[str], join_by: str):
-    #! Copied from HUGGING FACE. Was needed to create Baseline with API similar to HF
-    """
-    Convert a list of words to a list of offsets, where word are joined by `join_by`.
-
-    Args:
-        words (List[str]): List of words to get offsets from.
-        join_by (str): String to insert between words.
-
-    Returns:
-        List[Tuple[int, int]]: List of the characters (start index, end index) for each of the words.
-    """
-    offsets = []
-
-    start = 0
-    for word in words:
-        end = start + len(word) - 1
-        offsets.append((start, end))
-        start = end + len(join_by) + 1
-
-    return offsets
-
-
-def create_fasttext_model(dataset, name="model.bin"):
-    """Creates a fasttext model from a HF dataset"""
-    EMB_RESULTS = Path("embeddings")
-    EMB_RESULTS.mkdir(exist_ok=True)
-    corpora = " ".join(
-        [" ".join(tokens) for tokens in dataset["tokens"]]
-    )  # I don't even preprocess the data this is to be discussed
-    corpora_path = EMB_RESULTS / "corpora.txt"
-    with open(corpora_path, "w") as f:
-        f.write(corpora)
-
-    import fasttext  # So that we don't have to install it if we don't need it
-
-    model = fasttext.train_unsupervised(str(corpora_path))
-    model.save_model(str(EMB_RESULTS / name))
-
-
-def get_unique_ner(dataset):
-    unique_labels = set()
-
-    for tags in dataset["ner_tags"]:
-        unique_labels = unique_labels.union(set(tags))
-
-    return list(unique_labels)
-
-
-def cast_ner_labels_to_int(dataset):
-    unique_ner = get_unique_ner(dataset)
-
-    casted = dataset.cast(
-        Features(
-            {
-                "ner_tags": Sequence(ClassLabel(names=unique_ner)),
-                "tokens": Sequence(Value(dtype="string")),
-            }
-        )
-    )
-
-    return casted
-
-
-def create_embeddings(example, emb_model):
-    example["embedding"] = [
-        emb_model.get_word_vector(word) for word in example["tokens"]
-    ]
-    return example
