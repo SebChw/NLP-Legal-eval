@@ -72,13 +72,6 @@ def cast_ner_labels_to_int(dataset):
     return casted
 
 
-def create_embeddings(example, emb_model):
-    example["embedding"] = [
-        emb_model.get_word_vector(word) for word in example["tokens"]
-    ]
-    return example
-
-
 def print_predictions(example, baseline):
     tokens = example['tokens']
     prediction = [x['entity'] for x in baseline.predict([" ".join(tokens)])[0]]
