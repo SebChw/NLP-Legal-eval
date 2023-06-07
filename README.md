@@ -1,16 +1,24 @@
 # NLP-Legal-eval
 
-To download the data run
+At first clone the repo and install our module
 
 ```shell
-    python get_data.py
+    git clone https://github.com/SebChw/NLP-Legal-eval.git
+    cd NLP-LEGAL-EVAL
+    pip install -e .
 ```
 
-To get train and test splits of datasets in a HF format:
+To download and load the data
+
 ```py
-from utils import get_hf_dataset
-dataset = get_hf_dataset
+    from legal_eval.data import download_data, get_hf_dataset
+    
+    DATA_PATH = Path("../data")
+
+    download_data(DATA_PATH)
+    dataset = get_hf_dataset()
 ```
+
 
 annotations are in format like this (I unnested them!)
 
