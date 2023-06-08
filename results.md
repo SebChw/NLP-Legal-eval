@@ -6,10 +6,10 @@ X X X
 ## Baseline 2:
 X X X
 ## SpaCy CNN model on word2vec embeddings:
-X X X
+0.753   0.714   0.733
 ## SpaCy RoBERTa model:
-X X X
+0.871   0.891   0.881
 ## BERT:
-0.722875	0.820362	0.768539
+0.722   0.820	0.768
 ## FLaIR Bi-LSTM CRF:
 X X X
