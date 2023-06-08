@@ -165,3 +165,7 @@ embeddings
 plots
 wandb
 my_awesome*
+corpora.txt
+*bin
+
+spacy/gpu-RoBERTa
