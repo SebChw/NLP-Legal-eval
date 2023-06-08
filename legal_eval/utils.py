@@ -1,8 +1,8 @@
 from pathlib import Path
 from typing import List
 
+import numpy as np
 import pandas as pd
-from datasets import ClassLabel, Features, Sequence, Value
 from evaluate import evaluator
 
 from legal_eval.constants import TASK
@@ -48,34 +48,19 @@ def create_fasttext_model(dataset, name="model.bin"):
     model.save_model(str(EMB_RESULTS / name))
 
 
-def get_unique_ner(dataset):
-    unique_labels = set()
+def get_class_counts(dataset, n_classes=29):
+    class_imbalance = np.zeros(n_classes)
+    for labels in dataset["ner_tags"]:
+        for label, occurance in zip(*np.unique(labels, return_counts=True)):
+            class_imbalance[label] += occurance
 
-    for tags in dataset["ner_tags"]:
-        unique_labels = unique_labels.union(set(tags))
-
-    return list(unique_labels)
-
-
-def cast_ner_labels_to_int(dataset):
-    unique_ner = get_unique_ner(dataset)
-
-    casted = dataset.cast(
-        Features(
-            {
-                "ner_tags": Sequence(ClassLabel(names=unique_ner)),
-                "tokens": Sequence(Value(dtype="string")),
-            }
-        )
-    )
-
-    return casted
+    return class_imbalance
 
 
 def print_predictions(example, baseline):
-    tokens = example['tokens']
-    prediction = [x['entity'] for x in baseline.predict([" ".join(tokens)])[0]]
-    target = example['ner_tags']
+    tokens = example["tokens"]
+    prediction = [x["entity"] for x in baseline.predict([" ".join(tokens)])[0]]
+    target = example["ner_tags"]
     print("TOKEN", "PREDICTION", "TARGET", sep="\t")
     for token, pred, targ in zip(tokens, prediction, target):
         print(token, pred, targ, sep="\t")

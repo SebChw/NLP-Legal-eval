@@ -163,3 +163,5 @@ data
 fastText
 embeddings
 plots
+wandb
+my_awesome*

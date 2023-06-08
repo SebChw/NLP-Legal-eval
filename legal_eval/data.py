@@ -3,17 +3,23 @@ from io import BytesIO
 from pathlib import Path
 
 import requests
-from datasets import DatasetDict, load_dataset
+from datasets import ClassLabel, DatasetDict, Features, Sequence, Value, load_dataset
 from tokenizers.pre_tokenizers import WhitespaceSplit
 
-from legal_eval.constants import (DEV_JUDG, DEV_PREA, TEST_URL, TRAIN_JUDG,
-                                  TRAIN_PREA, TRAIN_URL)
+from legal_eval.constants import (
+    DEV_JUDG,
+    DEV_PREA,
+    TEST_URL,
+    TRAIN_JUDG,
+    TRAIN_PREA,
+    TRAIN_URL,
+)
 
 
 def download_data(data_path: Path, force_download=False):
     if data_path.exists() and not force_download:
         return
-    
+
     data_path.mkdir(exist_ok=True)
     for zip_file_url in [TRAIN_URL, TEST_URL]:
         r = requests.get(zip_file_url, stream=True)
@@ -30,14 +36,16 @@ def get_hf_dataset(data_path: Path, columns_to_remove=["id", "meta"]):
     """
 
     if not data_path.exists():
-        raise FileNotFoundError("Please run legal_eval.data.download_data first to download the data")
+        raise FileNotFoundError(
+            "Please run legal_eval.data.download_data first to download the data"
+        )
 
-    train_dataset = load_dataset("json", data_files=[str(data_path / TRAIN_JUDG), str(data_path / TRAIN_PREA)])[
-        "train"
-    ]
-    test_dataset = load_dataset("json", data_files=[str(data_path / DEV_JUDG), str(data_path / DEV_PREA)])[
-        "train"
-    ]
+    train_dataset = load_dataset(
+        "json", data_files=[str(data_path / TRAIN_JUDG), str(data_path / TRAIN_PREA)]
+    )["train"]
+    test_dataset = load_dataset(
+        "json", data_files=[str(data_path / DEV_JUDG), str(data_path / DEV_PREA)]
+    )["train"]
 
     dataset = DatasetDict(
         {"train": train_dataset, "test": test_dataset}
@@ -111,3 +119,26 @@ def parse_to_ner(dataset):
 
     return dataset.map(get_labels, remove_columns=["text", "annotations"])
 
+
+def cast_ner_labels_to_int(dataset):
+    unique_ner = _get_unique_ner(dataset)
+
+    casted = dataset.cast(
+        Features(
+            {
+                "ner_tags": Sequence(ClassLabel(names=unique_ner)),
+                "tokens": Sequence(Value(dtype="string")),
+            }
+        )
+    )
+
+    return casted
+
+
+def _get_unique_ner(dataset):
+    unique_labels = set()
+
+    for tags in dataset["train"]["ner_tags"]:
+        unique_labels = unique_labels.union(set(tags))
+
+    return list(unique_labels)

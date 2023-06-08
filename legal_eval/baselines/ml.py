@@ -3,7 +3,7 @@ from typing import List
 import numpy as np
 from scipy import signal
 
-from legal_eval.utils import cast_ner_labels_to_int, words_to_offsets
+from legal_eval.utils import words_to_offsets
 
 
 class MLBaseline:
@@ -17,7 +17,6 @@ class MLBaseline:
         save Class Labels feature for int2str transform ->
         create embeddings and split dataset into separate words instead of sequences ->
         set format to numpy for SVC"""
-        dataset = cast_ner_labels_to_int(dataset)
         self.class_labels = dataset.features["ner_tags"].feature
         dataset = dataset.map(
             _split_examples,
@@ -28,6 +27,7 @@ class MLBaseline:
                 "embed_model": self.embed_model,
                 "window_size": self.window_size,
             },
+            load_from_cache_file=False,
         )
         dataset.set_format("numpy", columns=["embedding", "label"])
         return dataset["embedding"], dataset["label"]
@@ -58,7 +58,7 @@ class MLBaseline:
         labels = []
         for n_sent, sentence in enumerate(sentences):
             sentence = sentence.split()
-            embeddings = _create_embeddings(
+            embeddings = _create_conv_embeddings(
                 sentence, self.embed_model, self.window_size
             )
             predictions = self.clf.predict(embeddings)
@@ -81,7 +81,7 @@ class MLBaseline:
         return labels
 
 
-def _create_embeddings(tokens, embed_model, window_size):
+def _create_conv_embeddings(tokens, embed_model, window_size):
     embeddings_avg = np.array([embed_model.get_word_vector(word) for word in tokens])
 
     if window_size > 1:
@@ -97,7 +97,7 @@ def _split_examples(examples, embed_model, window_size):
     all_labels = []
 
     for tokens, labels in zip(examples["tokens"], examples["ner_tags"]):
-        embeddings = _create_embeddings(tokens, embed_model, window_size)
+        embeddings = _create_conv_embeddings(tokens, embed_model, window_size)
 
         for i in range(len(labels)):
             all_embeddings.append(embeddings[i])

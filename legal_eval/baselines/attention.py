@@ -6,18 +6,23 @@ import torch.nn.functional as F
 from transformers import PretrainedConfig, PreTrainedModel
 from transformers.data.data_collator import DataCollatorMixin
 
-from legal_eval.utils import cast_ner_labels_to_int
+from legal_eval.baselines.ml import _create_conv_embeddings
+from legal_eval.baselines.utils import _create_embeddings
+from legal_eval.constants import DEVICE
+from legal_eval.utils import words_to_offsets
 
 
 class AttentionBaselineConfig(PretrainedConfig):
     def __init__(
         self,
+        weights=None,
         num_classes: int = 1,
         n_head=5,
         n_layers=1,
         split_len=64,
         **kwargs,
     ):
+        self.weights = weights
         self.num_classes = num_classes
         self.n_head = n_head
         self.n_layers = n_layers
@@ -37,9 +42,9 @@ class AttentionBaseline(PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
 
+        self.weights = torch.Tensor(config.weights).to(DEVICE)
         self.n_classes = config.num_classes
         self.split_len = config.split_len
-
         self.encoder_layer = nn.TransformerEncoderLayer(
             d_model=self.FASTTEXT_DIM, nhead=config.n_head, batch_first=True
         )
@@ -55,47 +60,38 @@ class AttentionBaseline(PreTrainedModel):
         if labels is not None:
             labels = labels.flatten()
             logits = logits.flatten(0, 1)
-            loss = F.cross_entropy(logits, labels)
+            loss = F.cross_entropy(logits, labels, weight=self.weights)
             return {"loss": loss, "logits": logits}
 
         return {"logits": logits}
 
+    def predict(self, sentences: List[str]):
+        labels = []
+        for n_sent, sentence in enumerate(sentences):
+            sentence = sentence.split()
+            embeddings = _create_conv_embeddings(sentence, self.embed_model, 1)
+            embeddings = torch.Tensor(embeddings).to(DEVICE)
+            embeddings = torch.unsqueeze(embeddings, 0)
 
-def prepare_att_dataset(dataset, embed_model, split_len=64):
-    # We need custom data collator
-    # We don't need custom tokenizer it's not necessary
-    dataset = cast_ner_labels_to_int(dataset)
-    dataset = dataset.map(
-        _create_embeddings,
-        batched=True,
-        remove_columns=["tokens", "ner_tags"],
-        fn_kwargs={"embed_model": embed_model, "split_len": split_len},
-    )
-    dataset.set_format("pt", columns=["embeddings", "label"])
-    return dataset
+            logits = self.forward(embeddings)["logits"][0]
+            predictions = logits.max(dim=1).indices
+            predictions = self.class_labels.int2str(predictions)
 
+            words_offsets = words_to_offsets(sentence, " ")
+            labels.append([])
+            for n_word, word in enumerate(sentence):
+                offset = words_offsets[n_word]
+                labels[n_sent].append(
+                    {
+                        "entity": predictions[n_word],
+                        "score": 1,
+                        "word": word,
+                        "start": offset[0],
+                        "end": offset[1],
+                    }
+                )  # to follow HF API
 
-def _create_embeddings(examples, embed_model, split_len):
-    all_embeddings = []
-    all_labels = []
-
-    for example_token, example_tags in zip(examples["tokens"], examples["ner_tags"]):
-        for start_pos in range(0, len(example_token), split_len):
-            if start_pos + split_len > len(example_token):
-                start_pos = max([0, len(example_token) - split_len])
-
-            end_pos = start_pos + split_len
-            tokens = example_token[start_pos:end_pos]
-            labels = example_tags[start_pos:end_pos]
-            embeddings = [embed_model.get_word_vector(word) for word in tokens]
-
-            all_embeddings.append(embeddings)
-            all_labels.append(labels)
-
-    return {
-        "embeddings": all_embeddings,
-        "label": all_labels,
-    }  # input_ids to fool Trainer
+        return labels
 
 
 class AttentionCollator(DataCollatorMixin):
@@ -128,13 +124,6 @@ class AttentionCollator(DataCollatorMixin):
         labels = torch.stack(labels)
         embeddings = torch.stack(embeddings)
         # att_masks = torch.stack(att_masks)
-
-        # print(labels[0])
-        # print(embeddings[0])
-        # print(att_masks[0])
-        # print(labels.shape)
-        # print(embeddings.shape)
-        # print(att_masks.shape)
 
         return {
             "X": embeddings,
