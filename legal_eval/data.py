@@ -142,3 +142,7 @@ def _get_unique_ner(dataset):
         unique_labels = unique_labels.union(set(tags))
 
     return list(unique_labels)
+
+if __name__ == "__main__":
+    data_path = Path("data")
+    download_data(data_path)
