@@ -169,6 +169,8 @@ my_awesome*
 =======
 corpora.txt
 *bin
-
-spacy/output
->>>>>>> 5a64141 (add outputto ignore)
+<<<<<<< HEAD
+>>>>>>> 893c7e9 (add spacy tok2vec+CNN model)
+=======
+spacy/gpu-RoBERTa
+>>>>>>> 545d13a (ignore big transformer files)

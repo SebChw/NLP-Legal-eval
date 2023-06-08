@@ -161,12 +161,11 @@ cython_debug/
 
 data
 fastText
-<<<<<<< HEAD
 embeddings
 plots
 wandb
 my_awesome*
-=======
 corpora.txt
 *bin
->>>>>>> 893c7e9 (add spacy tok2vec+CNN model)
+
+spacy/gpu-RoBERTa
