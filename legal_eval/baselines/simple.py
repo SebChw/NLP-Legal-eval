@@ -1,11 +1,20 @@
 from collections import defaultdict
 from typing import List
 
+from datasets import Dataset
+
 from legal_eval.utils import words_to_offsets
 
 
 class TurboSimpleBaseline:
-    def fit(self, dataset):
+    """Baseline that assigns class to each word if it was ever used in such situation."""
+
+    def fit(self, dataset: Dataset):
+        """Goes over the dataset and creates a dictionary of words for each class.
+
+        Args:
+            dataset (Dataset):
+        """
         self.knowledge = defaultdict(
             lambda: set()
         )  # Maybe one very big dictionary would be better?
@@ -14,7 +23,15 @@ class TurboSimpleBaseline:
                 if annotation != "O":
                     self.knowledge[annotation].add(word)
 
-    def predict(self, sentences: List[str]):
+    def predict(self, sentences: List[str]) -> List[List[dict]]:
+        """Predicts labels for each word in each sentence. Looking up previously created dictionary
+
+        Args:
+            sentences (List[str]): _description_
+
+        Returns:
+            List[List[dict]]: For each given sentence we return a list of dictionaries. Every dictionary represents entity found.
+        """
         labels = []
         for n_sent, sentence in enumerate(sentences):
             sentence = sentence.split()
