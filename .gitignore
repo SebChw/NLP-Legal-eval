@@ -168,3 +168,7 @@ my_awesome*
 
 notebooks/*based*
 notebooks/overfit
+corpora.txt
+*bin
+
+spacy/gpu-RoBERTa
