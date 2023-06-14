@@ -7,10 +7,11 @@ from legal_eval.utils import words_to_offsets
 
 
 class MLBaseline:
-    def __init__(self, embed_model, ml_model, window_size):
+    def __init__(self, embed_model, ml_model, window_size, kernel_type="gaussian"):
         self.embed_model = embed_model
         self.ml_model = ml_model
         self.window_size = window_size
+        self.kernel_type = kernel_type
 
     def prepare_dataset(self, dataset):
         """Go from string labels to int ->
@@ -26,6 +27,7 @@ class MLBaseline:
             fn_kwargs={
                 "embed_model": self.embed_model,
                 "window_size": self.window_size,
+                "kernel_type": self.kernel_type,
             },
             load_from_cache_file=False,
         )
@@ -59,7 +61,7 @@ class MLBaseline:
         for n_sent, sentence in enumerate(sentences):
             sentence = sentence.split()
             embeddings = _create_conv_embeddings(
-                sentence, self.embed_model, self.window_size
+                sentence, self.embed_model, self.window_size, self.kernel_type
             )
             predictions = self.clf.predict(embeddings)
             predictions = self.class_labels.int2str(predictions)
@@ -81,23 +83,31 @@ class MLBaseline:
         return labels
 
 
-def _create_conv_embeddings(tokens, embed_model, window_size):
+def _create_conv_embeddings(tokens, embed_model, window_size, kernel_type="gaussian"):
     embeddings_avg = np.array([embed_model.get_word_vector(word) for word in tokens])
 
     if window_size > 1:
-        kernel = np.full((window_size, 1), 1 / window_size)
+        if kernel_type == "gaussian":
+            range_ = window_size // 2
+            kernel = np.exp((-np.arange(-range_, range_ + 1, 1) ** 2) / 2)
+            kernel = np.expand_dims(kernel / np.sum(kernel), 1)
+        else:
+            kernel = np.full((window_size, 1), 1 / window_size)
+
         embeddings_avg = signal.convolve2d(embeddings_avg, kernel, mode="same")
 
     return embeddings_avg
 
 
-def _split_examples(examples, embed_model, window_size):
+def _split_examples(examples, embed_model, window_size, kernel_type=None):
     """This takes entire sequence of tokens and labels and splits it into individual embeddings and labels"""
     all_embeddings = []
     all_labels = []
 
     for tokens, labels in zip(examples["tokens"], examples["ner_tags"]):
-        embeddings = _create_conv_embeddings(tokens, embed_model, window_size)
+        embeddings = _create_conv_embeddings(
+            tokens, embed_model, window_size, kernel_type
+        )
 
         for i in range(len(labels)):
             all_embeddings.append(embeddings[i])
