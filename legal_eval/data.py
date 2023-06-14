@@ -1,7 +1,7 @@
 import zipfile
 from io import BytesIO
 from pathlib import Path
-from typing import List, Dict
+from typing import Dict, List, Set
 
 import requests
 from datasets import ClassLabel, DatasetDict, Features, Sequence, Value, load_dataset
@@ -208,7 +208,7 @@ def _get_unique_ner(dataset: DatasetDict) -> List[str]:
 
     Returns:
         List[str]: List of unique NER labels taken from the train split."""
-    unique_labels = set()
+    unique_labels: Set[str] = set()
 
     for tags in dataset["train"]["ner_tags"]:
         unique_labels = unique_labels.union(set(tags))

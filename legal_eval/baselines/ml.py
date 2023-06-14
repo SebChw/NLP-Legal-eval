@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 from datasets import Dataset
@@ -105,16 +105,16 @@ class MLBaseline:
         Returns:
             List[List[dict]]: List of labels for each given sentence sentence.
         """
-        labels = []
+        labels: List[List[Dict[str, Any]]] = []
         for n_sent, sentence in enumerate(sentences):
-            sentence = sentence.split()
+            sentence = sentence.split()  # type: ignore
             embeddings = _create_conv_embeddings(
-                sentence, self.embed_model, self.window_size, self.kernel_type
+                sentence, self.embed_model, self.window_size, self.kernel_type  # type: ignore
             )
             predictions = self.clf.predict(embeddings)
             predictions = self.class_labels.int2str(predictions)
 
-            words_offsets = words_to_offsets(sentence, " ")
+            words_offsets = words_to_offsets(sentence, " ")  # type: ignore
             labels.append([])
             for n_word, word in enumerate(sentence):
                 offset = words_offsets[n_word]
@@ -155,7 +155,7 @@ def _create_conv_embeddings(
         else:
             kernel = np.full((window_size, 1), 1 / window_size)
 
-        embeddings_avg = signal.convolve2d(embeddings_avg, kernel, mode="same")
+        embeddings_avg = signal.convolve2d(embeddings_avg, kernel, mode="same")  # type: ignore
 
     return embeddings_avg
 

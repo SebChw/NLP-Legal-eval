@@ -1,0 +1,6 @@
+from pathlib import Path
+from typing import Union
+
+class DocBin:
+    def add(self, doc) -> None: ...
+    def to_disk(self, path: Union[str, Path]) -> None: ...

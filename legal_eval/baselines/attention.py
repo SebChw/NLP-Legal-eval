@@ -1,5 +1,5 @@
 import math
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import torch
@@ -17,7 +17,7 @@ from legal_eval.utils import words_to_offsets
 class AttentionBaselineConfig(PretrainedConfig):
     def __init__(
         self,
-        weights: np.ndarray = None,
+        weights: np.ndarray = np.array([1.0, 1.0]),
         num_classes: int = 1,
         n_head=5,
         n_layers=1,
@@ -71,8 +71,8 @@ class AttentionBaseline(PreTrainedModel):
     def forward(
         self,
         X: torch.Tensor,
-        labels: torch.Tensor = None,
-        attention_mask: torch.Tensor = None,
+        labels: Optional[torch.Tensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
         just_embeddings: bool = False,
     ):
         """Forward pass of the model.
@@ -113,21 +113,21 @@ class AttentionBaseline(PreTrainedModel):
         Returns:
             List[List[dict]]: List of list of dicts with labels for each word in sentence.
         """
-        labels = []
+        labels: List[List[Dict[str, Any]]] = []
         for n_sent, sentence in enumerate(sentences):
-            sentence = sentence.split()
-            embeddings = _create_conv_embeddings(sentence, self.embed_model, 1)
-            embeddings = torch.Tensor(embeddings).to(DEVICE)
-            embeddings = torch.unsqueeze(embeddings, 0)
+            sentence = sentence.split()  # type: ignore
+            embeddings = _create_conv_embeddings(sentence, self.embed_model, 1)  # type: ignore
+            embeddings = torch.Tensor(embeddings).to(DEVICE)  # type: ignore
+            embeddings = torch.unsqueeze(embeddings, 0)  # type: ignore
 
             if just_embeddings:
-                return self.forward(embeddings, just_embeddings=True)
+                return self.forward(embeddings, just_embeddings=True)  # type: ignore
 
-            logits = self.forward(embeddings)["logits"][0]
+            logits = self.forward(embeddings)["logits"][0]  # type: ignore
             predictions = logits.max(dim=1).indices
-            predictions = self.class_labels.int2str(predictions)
+            predictions = self.class_labels.int2str(predictions)  # type: ignore
 
-            words_offsets = words_to_offsets(sentence, " ")
+            words_offsets = words_to_offsets(sentence, " ")  # type: ignore
             labels.append([])
             for n_word, word in enumerate(sentence):
                 offset = words_offsets[n_word]
@@ -174,8 +174,8 @@ class AttentionCollator(DataCollatorMixin):
         embeddings = [f["embeddings"] for f in features]
         labels = [f["label"] for f in features]
 
-        embeddings = pad_sequence(embeddings, batch_first=True)
-        labels = pad_sequence(labels, batch_first=True, padding_value=-100)
+        embeddings = pad_sequence(embeddings, batch_first=True)  # type: ignore
+        labels = pad_sequence(labels, batch_first=True, padding_value=-100)  # type: ignore
 
         return {
             "X": embeddings,
