@@ -100,3 +100,19 @@ from utils import create_fasttext_model
 
 create_fasttext_model(dataset_ner['train'], "legal_eval.bin")
 ```
+
+### SpaCy models
+
+To train spacy model you need to have spacy installed and run
+
+```shell
+python -m spacy train cpu_final.cfg --output ./output --paths.train ./train.spacy --paths.dev ./dev.spacy
+```
+
+If you are on GPU you make replace `cpu_final.cfg` with `gpu_final.cfg`.
+
+### GPT
+Generative models were not designed to solve NER tasks, but nowadays they are used for everything so let's give them a chance.
+
+You can use them providing your `OPENAI_API_TOKEN` in system variables.
+Then you may run the legal_eval/GPT/openai.ipynb notebook to see how it works.
