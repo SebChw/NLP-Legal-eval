@@ -8,6 +8,30 @@ At first clone the repo and install our module
     pip install -e .
 ```
 
+## API serving the best spacy models
+If you have GPU you should download GPU RoBERTa weights [here](https://shorturl.at/cIJSV)
+
+You can run the app navigating to app/ directory and running gunicorn server
+    
+```shell
+    cd app
+    gunicorn wsgi:app 
+```
+
+Then you can make two types of api call: \
+`process` - Just process the text and return the result \
+`process_vizualize` - Returns an HTML file with nice spacy vizualization
+
+```shell
+curl -X POST -H "Content-Type: application/json" -d '{"text": "The next contention revolves around the role of the AICTE and the decision of the Supreme Court in Bharathidasan University."}' http://127.0.0.1:8000/process_vizualize > visualization.html
+```
+or just
+```shell
+curl -X POST -H "Content-Type: application/json" -d '{"text": "The next contention revolves around the role of the AICTE and the decision of the Supreme Court in Bharathidasan University."}' http://127.0.0.1:8000/process
+```
+
+## Development
+
 To download and load the data
 
 ```py
@@ -76,3 +100,19 @@ from utils import create_fasttext_model
 
 create_fasttext_model(dataset_ner['train'], "legal_eval.bin")
 ```
+
+### SpaCy models
+
+To train spacy model you need to have spacy installed and run
+
+```shell
+python -m spacy train cpu_final.cfg --output ./output --paths.train ./train.spacy --paths.dev ./dev.spacy
+```
+
+If you are on GPU you make replace `cpu_final.cfg` with `gpu_final.cfg`.
+
+### GPT
+Generative models were not designed to solve NER tasks, but nowadays they are used for everything so let's give them a chance.
+
+You can use them providing your `OPENAI_API_TOKEN` in system variables.
+Then you may run the legal_eval/GPT/openai.ipynb notebook to see how it works.
