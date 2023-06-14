@@ -1,6 +1,4 @@
-import sys
-sys.path.append('..')
-from utils import get_hf_dataset
+from legal_eval.data import get_hf_dataset
 from spacy.tokens import DocBin
 import spacy
 
