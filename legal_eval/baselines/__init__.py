@@ -1,3 +1,4 @@
+# flake8: noqa
 from legal_eval.baselines.attention import (
     AttentionBaseline,
     AttentionBaselineConfig,

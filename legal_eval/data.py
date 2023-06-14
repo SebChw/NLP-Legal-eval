@@ -5,7 +5,6 @@ from typing import List, Dict
 
 import requests
 from datasets import ClassLabel, DatasetDict, Features, Sequence, Value, load_dataset
-from tokenizers import Tokenizer
 from tokenizers.pre_tokenizers import WhitespaceSplit
 
 from legal_eval.constants import (
@@ -133,6 +132,7 @@ def parse_to_ner(dataset: DatasetDict) -> DatasetDict:
 
     return dataset.map(get_labels, remove_columns=["text", "annotations"])
 
+
 def parse_to_ner_custom_tokenizer(dataset: DatasetDict, tokenizer) -> DatasetDict:
     """Parses the dataset to a more user friendly NER format insted of nested JSON annotations
 
@@ -148,13 +148,15 @@ def parse_to_ner_custom_tokenizer(dataset: DatasetDict, tokenizer) -> DatasetDic
 
         text, annotations = example["text"], example["annotations"]
 
-        tokens = tokenizer.encode_plus(text, return_offsets_mapping=True, truncation=True)
-        offsets = tokens['offset_mapping']
+        tokens = tokenizer.encode_plus(
+            text, return_offsets_mapping=True, truncation=True
+        )
+        offsets = tokens["offset_mapping"]
         # Initialize the label list
-        labels = ["O"] * len(tokens['input_ids'])
+        labels = ["O"] * len(tokens["input_ids"])
 
         if not annotations:
-            tokens['ner_tags'] = labels
+            tokens["ner_tags"] = labels
             return tokens
 
         for named_entity in annotations:
@@ -173,12 +175,15 @@ def parse_to_ner_custom_tokenizer(dataset: DatasetDict, tokenizer) -> DatasetDic
             if token_start is not None and token_end is not None:
                 for i in range(token_start, token_end + 1):
                     if i == token_start:
-                        labels[i] = "B-" + named_entity['labels'][0]
+                        labels[i] = "B-" + named_entity["labels"][0]
                     else:
-                        labels[i] = "I-" + named_entity['labels'][0]
-        tokens['ner_tags'] = labels
+                        labels[i] = "I-" + named_entity["labels"][0]
+        tokens["ner_tags"] = labels
         return tokens
+
     return dataset.map(get_labels, remove_columns=["text", "annotations"])
+
+
 def cast_ner_labels_to_int(dataset: DatasetDict) -> DatasetDict:
     """Casts the NER labels from strings to integers"""
     unique_ner = _get_unique_ner(dataset)
@@ -211,7 +216,9 @@ def _get_unique_ner(dataset: DatasetDict) -> List[str]:
     return list(unique_labels)
 
 
-def map_labels_to_numbers_for_tokenizer(dataset: DatasetDict, label2id: Dict) -> DatasetDict:
+def map_labels_to_numbers_for_tokenizer(
+    dataset: DatasetDict, label2id: Dict
+) -> DatasetDict:
     """Maps the NER labels to numbers for the tokenizer to understand
 
     Args:
@@ -223,7 +230,7 @@ def map_labels_to_numbers_for_tokenizer(dataset: DatasetDict, label2id: Dict) ->
 
     def map_labels(example):
         """Maps the labels to numbers"""
-        example['labels'] = [label2id[label] for label in example['ner_tags']]
+        example["labels"] = [label2id[label] for label in example["ner_tags"]]
         return example
 
     return dataset.map(map_labels, remove_columns=["ner_tags"])
