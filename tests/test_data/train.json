@@ -1,0 +1,102 @@
+[
+    {
+        "id": "90d9a97c7b7749ec8a4f460fda6f937e",
+        "annotations": [
+            {
+                "result": [
+                    {
+                        "value": {
+                            "start": 90,
+                            "end": 103,
+                            "text": "Hongkong Bank",
+                            "labels": [
+                                "ORG"
+                            ]
+                        },
+                        "id": "C8HPTIM1",
+                        "from_name": "label",
+                        "to_name": "text",
+                        "type": "labels"
+                    },
+                    {
+                        "value": {
+                            "start": 267,
+                            "end": 278,
+                            "text": "Rahul & Co.",
+                            "labels": [
+                                "ORG"
+                            ]
+                        },
+                        "id": "KOWE3RAM",
+                        "from_name": "label",
+                        "to_name": "text",
+                        "type": "labels"
+                    }
+                ]
+            }
+        ],
+        "data": {
+            "text": "\n\n(7) On specific query by the Bench about an entry of Rs. 1,31,37,500 on deposit side of Hongkong Bank account of which a photo copy is appearing at p. 40 of assessee's paper book, learned authorised representative submitted that it was related to loan from broker, Rahul & Co. on the basis of his submission a necessary mark is put by us on that photo copy."
+        },
+        "meta": {
+            "source": "tax_districtcourts judgement https://indiankanoon.org/doc/1556717/"
+        }
+    },
+    {
+        "id": "a325c57ba5b84c6fa46bee65e6616633",
+        "annotations": [
+            {
+                "result": [
+                    {
+                        "value": {
+                            "start": 26,
+                            "end": 30,
+                            "text": "Agya",
+                            "labels": [
+                                "OTHER_PERSON"
+                            ]
+                        },
+                        "id": "0V4Q2F2B",
+                        "from_name": "label",
+                        "to_name": "text",
+                        "type": "labels"
+                    },
+                    {
+                        "value": {
+                            "start": 101,
+                            "end": 105,
+                            "text": "Kaur",
+                            "labels": [
+                                "OTHER_PERSON"
+                            ]
+                        },
+                        "id": "HLWY1CM9",
+                        "from_name": "label",
+                        "to_name": "text",
+                        "type": "labels"
+                    },
+                    {
+                        "value": {
+                            "start": 159,
+                            "end": 174,
+                            "text": "Tarlochan Singh",
+                            "labels": [
+                                "OTHER_PERSON"
+                            ]
+                        },
+                        "id": "9BYYLAZB",
+                        "from_name": "label",
+                        "to_name": "text",
+                        "type": "labels"
+                    }
+                ]
+            }
+        ],
+        "data": {
+            "text": "He was also asked whether Agya <span class=\"hidden_text\" id=\"span_5\"> CRA No.326-DB of 1998 6</span> Kaur, mother-in-law of the deceased lived separately from Tarlochan Singh."
+        },
+        "meta": {
+            "source": "criminal_punjab-haryana_high_court judgement https://indiankanoon.org/doc/264463"
+        }
+    }
+]
