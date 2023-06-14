@@ -1,10 +1,10 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.utils.rnn import pack_padded_sequence, pad_sequence
+from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence, pad_sequence
 from transformers import PretrainedConfig, PreTrainedModel
 from transformers.data.data_collator import DataCollatorMixin
 
@@ -16,7 +16,7 @@ from legal_eval.utils import words_to_offsets
 class LSTMBaselineConfig(PretrainedConfig):
     def __init__(
         self,
-        weights: np.ndarray = None,
+        weights: np.ndarray = np.array([1.0, 1.0]),
         input_size: int = 100,
         hidden_size: int = 50,
         bidirectional: bool = True,
@@ -78,10 +78,10 @@ class LSTMBaseline(PreTrainedModel):
     def forward(
         self,
         X: torch.Tensor,
-        labels: torch.Tensor = None,
-        lengths: torch.Tensor = None,
+        labels: Optional[torch.Tensor] = None,
+        lengths: Optional[torch.Tensor] = None,
         just_embeddings: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> Union[Dict[str, Any], torch.Tensor]:
         """Forward pass.
 
         Args:
@@ -96,14 +96,14 @@ class LSTMBaseline(PreTrainedModel):
         if lengths is not None:
             X = pack_padded_sequence(
                 X, lengths.cpu(), batch_first=True, enforce_sorted=False
-            )
+            )  # type: ignore
 
         X = self.lstm(X)
         if just_embeddings:
             return X[0]
 
         if lengths is not None:
-            X, lengths = torch.nn.utils.rnn.pad_packed_sequence(X[0], batch_first=True)
+            X, lengths = torch.nn.utils.rnn.pad_packed_sequence(X[0], batch_first=True)  # type: ignore
             logits = self.classification_head(X)
         else:
             logits = self.classification_head(X[0])
@@ -128,21 +128,21 @@ class LSTMBaseline(PreTrainedModel):
         Returns:
             List[List[dict]]: List of list of dicts with labels for each word in sentence.
         """
-        labels = []
+        labels: List[List[Dict[str, Any]]] = []
         for n_sent, sentence in enumerate(sentences):
-            sentence = sentence.split()
-            embeddings = _create_conv_embeddings(sentence, self.embed_model, 1)
-            embeddings = torch.Tensor(embeddings).to(DEVICE)
-            embeddings = torch.unsqueeze(embeddings, 0)
+            sentence = sentence.split()  # type: ignore
+            embeddings = _create_conv_embeddings(sentence, self.embed_model, 1)  # type: ignore
+            embeddings = torch.Tensor(embeddings).to(DEVICE)  # type: ignore
+            embeddings = torch.unsqueeze(embeddings, 0)  # type: ignore
 
             if just_embeddings:
-                return self.forward(embeddings, just_embeddings=True)
+                return self.forward(embeddings, just_embeddings=True)  # type: ignore
 
-            logits = self.forward(embeddings)["logits"][0]
+            logits = self.forward(embeddings)["logits"][0]  # type: ignore
             predictions = logits.max(dim=1).indices
-            predictions = self.class_labels.int2str(predictions)
+            predictions = self.class_labels.int2str(predictions)  # type: ignore
 
-            words_offsets = words_to_offsets(sentence, " ")
+            words_offsets = words_to_offsets(sentence, " ")  # type: ignore
             labels.append([])
             for n_word, word in enumerate(sentence):
                 offset = words_offsets[n_word]
@@ -174,8 +174,8 @@ class LSTMCollator(DataCollatorMixin):
 
         lengths = torch.Tensor([len(len_) for len_ in labels])
 
-        embeddings = pad_sequence(embeddings, batch_first=True)
-        labels = pad_sequence(labels, batch_first=True, padding_value=-100)
+        embeddings = pad_sequence(embeddings, batch_first=True)  # type: ignore
+        labels = pad_sequence(labels, batch_first=True, padding_value=-100)  # type: ignore
 
         return {
             "X": embeddings,

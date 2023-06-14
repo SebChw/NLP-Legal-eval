@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import List
+from typing import Any, Dict, List
 
 from datasets import Dataset
 
@@ -32,10 +32,10 @@ class TurboSimpleBaseline:
         Returns:
             List[List[dict]]: For each given sentence we return a list of dictionaries. Every dictionary represents entity found.
         """
-        labels = []
+        labels: List[List[Dict[str, Any]]] = []
         for n_sent, sentence in enumerate(sentences):
-            sentence = sentence.split()
-            words_offsets = words_to_offsets(sentence, " ")
+            sentence = sentence.split()  # type: ignore
+            words_offsets = words_to_offsets(sentence, " ")  # type: ignore
             labels.append([])
             for n_word, word in enumerate(sentence):
                 offset = words_offsets[n_word]
