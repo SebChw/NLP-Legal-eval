@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <title>Visualizer</title>
+</head>
+<body>
+    <form id="viz-form">
+        <label for="text">Text:</label><br>
+        <textarea id="text" name="text" rows="4" cols="50"></textarea>
+        <br>
+        <input type="submit" value="Visualize">
+    </form>
+    <div id="result"></div>
+
+    <script>
+        $(document).ready(function(){
+            $('#viz-form').on('submit', function(e){
+                e.preventDefault();
+                $.ajax({
+                    url: '/process_vizualize',
+                    data: JSON.stringify({"text": $('#text').val()}),
+                    type: 'POST',
+                    contentType: 'application/json',
+                    success: function(response){
+                        $('#result').html(response);
+                    },
+                    error: function(error){
+                        console.log(error);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
