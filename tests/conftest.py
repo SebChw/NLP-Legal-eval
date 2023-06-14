@@ -6,8 +6,8 @@ from legal_eval.data import cast_ner_labels_to_int, parse_to_ner
 
 @pytest.fixture
 def dataset_dict():
-    train_dataset = load_dataset("json", data_files=["tests/data/train.json"])["train"]
-    test_dataset = load_dataset("json", data_files=["tests/data/test.json"])["train"]
+    train_dataset = load_dataset("json", data_files=["tests/test_data/train.json"])["train"]
+    test_dataset = load_dataset("json", data_files=["tests/test_data/test.json"])["train"]
 
     dataset = DatasetDict(
         {"train": train_dataset, "test": test_dataset}

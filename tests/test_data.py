@@ -11,7 +11,7 @@ def test_parse_to_ner(dataset_dict):
     assert "ner_tags" in dataset["test"].features
 
     assert len(dataset["train"]) == 2
-    assert len(dataset["test"]) == 1
+    assert len(dataset["test"]) == 2
     # fmt: off
     assert dataset["train"][0]["tokens"] == ['(7)', 'On', 'specific', 'query', 'by', 'the', 'Bench', 'about', 'an', 'entry', 'of', 'Rs.', '1,31,37,500', 'on', 'deposit', 'side', 'of', 'Hongkong', 'Bank', 'account', 'of', 'which', 'a', 'photo', 'copy', 'is', 'appearing', 'at', 'p.', '40', 'of', "assessee's", 'paper', 'book,', 'learned', 'authorised', 'representative', 'submitted', 'that', 'it', 'was', 'related', 'to', 'loan', 'from', 'broker,', 'Rahul', '&', 'Co.', 'on', 'the', 'basis', 'of', 'his', 'submission', 'a', 'necessary', 'mark', 'is', 'put', 'by', 'us', 'on', 'that', 'photo', 'copy.']
     assert dataset["train"][0]["ner_tags"] == ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-ORG', 'I-ORG', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-ORG', 'I-ORG', 'I-ORG', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']
