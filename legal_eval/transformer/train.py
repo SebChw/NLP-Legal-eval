@@ -9,7 +9,6 @@ from legal_eval.data import parse_to_ner_custom_tokenizer, _get_unique_ner
 from transformers import (
     AutoTokenizer,
     AutoModelForTokenClassification,
-    Trainer,
     TrainingArguments,
 )
 import evaluate
@@ -18,6 +17,8 @@ import torch
 from sklearn.utils.class_weight import compute_class_weight
 from legal_eval.data import map_labels_to_numbers_for_tokenizer
 from transformers import DataCollatorForTokenClassification
+
+from legal_eval.transformer.utils import get_compute_metric_function, ClassWeightedTrainer
 
 DATA_PATH = Path("../data")
 
@@ -42,38 +43,17 @@ model = AutoModelForTokenClassification.from_pretrained(
 )
 
 
-def compute_metrics(p):
-    predictions, labels = p
-    predictions = np.argmax(predictions, axis=2)
-
-    true_predictions = [
-        [id2label[p] for (p, l) in zip(prediction, label) if l != -100]
-        for prediction, label in zip(predictions, labels)
-    ]
-    true_labels = [
-        [id2label[l] for (p, l) in zip(prediction, label) if l != -100]
-        for prediction, label in zip(predictions, labels)
-    ]
-
-    results = seqeval.compute(predictions=true_predictions, references=true_labels)
-    return {
-        "precision": results["overall_precision"],
-        "recall": results["overall_recall"],
-        "f1": results["overall_f1"],
-        "accuracy": results["overall_accuracy"],
-    }
-
-
 torch.cuda.empty_cache()
 training_args = TrainingArguments(
     output_dir="my_awesome_law_ner_model",
     learning_rate=1e-5,
     per_device_train_batch_size=4,
     per_device_eval_batch_size=4,
-    num_train_epochs=10,
+    num_train_epochs=0.01,
     weight_decay=0.01,
     evaluation_strategy="epoch",
-    logging_strategy="epoch",
+    logging_strategy="steps",
+    logging_steps=1,
     save_strategy="epoch",
     load_best_model_at_end=True,
 )
@@ -84,24 +64,15 @@ CLASS_WEIGHTS = torch.Tensor(
 )
 
 
-class ClassWeightedTrainer(Trainer):
-    def compute_loss(self, model, inputs):
-        labels = inputs["labels"]
-        outputs = model(**inputs)
-        logits = outputs[0]
-        loss_fct = torch.nn.CrossEntropyLoss(weight=CLASS_WEIGHTS.to(labels.device))
-        loss = loss_fct(logits.view(-1, self.model.config.num_labels), labels.view(-1))
-        return loss
-
-
-trainer = Trainer(
+trainer = ClassWeightedTrainer(
+    class_weights=CLASS_WEIGHTS,
     model=model,
     args=training_args,
     train_dataset=dataset_casted["train"],
     eval_dataset=dataset_casted["test"],
     tokenizer=tokenizer,
     data_collator=data_collator,
-    # compute_metrics=compute_metrics
+    compute_metrics=get_compute_metric_function(id2label, seqeval),
 )
 
 
