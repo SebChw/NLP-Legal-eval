@@ -1,0 +1,4 @@
+Flask==2.3.2
+spacy[cuda-autodetect]==3.5.3
+spacy-transformers==1.2.5
+gunicorn==20.1.0

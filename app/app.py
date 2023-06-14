@@ -1,13 +1,15 @@
+import torch
 from flask import Flask, request, jsonify
 import spacy
 from spacy import displacy
-from legal_eval.constants import DEVICE
 
 app = Flask(__name__)
 
-if DEVICE == "cpu":
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if device == "cpu":
     nlp = spacy.load("../legal_eval/spacy/output/model-best")
 else:
+    spacy.require_gpu()
     nlp = spacy.load("../legal_eval/spacy/gpu-RoBERTa/output/model-best")
 
 
