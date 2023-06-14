@@ -1,5 +1,6 @@
 from typing import Any, Dict, List
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -15,41 +16,54 @@ from legal_eval.utils import words_to_offsets
 class LSTMBaselineConfig(PretrainedConfig):
     def __init__(
         self,
-        weights=None,
+        weights: np.ndarray = None,
         input_size: int = 100,
         hidden_size: int = 50,
         bidirectional: bool = True,
         num_classes: int = 1,
         batch_fist: bool = True,
         n_layers=1,
-        split_len=64,
         **kwargs,
     ):
+        """Config for LSTM baseline.
+
+        Args:
+            weights (np.ndarray, optional): Weights for cross entropy loss. Defaults to None.
+            input_size (int, optional): Size of input embedding. Defaults to 100.
+            hidden_size (int, optional): Size of hidden layer. Defaults to 50.
+            bidirectional (bool, optional): Whether to use bidirectional LSTM. Defaults to True.
+            num_classes (int, optional): Number of classes. Defaults to 1.
+            batch_fist (bool, optional): Whether batch is first dimension. Defaults to True.
+            n_layers (int, optional): Number of layers. Defaults to 1.
+        """
         self.weights = weights
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.bidirectional = bidirectional
         self.num_classes = num_classes
         self.n_layers = n_layers
-        self.split_len = split_len
         self.batch_fist = batch_fist
         super().__init__(**kwargs)
 
 
 class LSTMBaseline(PreTrainedModel):
     """
-    Simple attention network that takes as the input fasttext embeddings.
+    Simple lstm network that takes as the input fasttext embeddings.
     It is consistent with HF API so can be trained using HF Trainer class.
     """
 
     config_class = LSTMBaselineConfig
 
-    def __init__(self, config):
+    def __init__(self, config: LSTMBaselineConfig):
+        """Creates LSTM + classification head.
+
+        Args:
+            config (LSTMBaselineConfig): Config for LSTM baseline.
+        """
         super().__init__(config)
 
         self.weights = torch.Tensor(config.weights).to(DEVICE)
         self.num_classes = config.num_classes
-        self.split_len = config.split_len
 
         self.lstm = nn.LSTM(
             input_size=config.input_size,
@@ -61,7 +75,24 @@ class LSTMBaseline(PreTrainedModel):
             nn.Linear(config.hidden_size * 2, self.num_classes)
         )
 
-    def forward(self, X, labels=None, lengths=None, just_embeddings=False):
+    def forward(
+        self,
+        X: torch.Tensor,
+        labels: torch.Tensor = None,
+        lengths: torch.Tensor = None,
+        just_embeddings: bool = False,
+    ) -> Dict[str, Any]:
+        """Forward pass.
+
+        Args:
+            X (torch.Tensor): Input embeddings.
+            labels (torch.Tensor, optional): Labels. Defaults to None.
+            lengths (torch.Tensor, optional): Lengths of sequences. Needed for sequence packing. Defaults to None.
+            just_embeddings (bool, optional): Whether to return just embeddings. Defaults to False.
+
+        Returns:
+            Dict[str, Any]: Dict with logits and loss if labels are provided.
+        """
         if lengths is not None:
             X = pack_padded_sequence(
                 X, lengths.cpu(), batch_first=True, enforce_sorted=False
@@ -80,14 +111,23 @@ class LSTMBaseline(PreTrainedModel):
         if labels is not None:
             labels = labels.flatten()
             logits = logits.flatten(0, 1)
-            # print(labels)
-            # print(logits.max(dim=1).indices)
             loss = F.cross_entropy(logits, labels, weight=self.weights)
             return {"loss": loss, "logits": logits}
 
         return {"logits": logits}
 
-    def predict(self, sentences: List[str], just_embeddings=False):
+    def predict(
+        self, sentences: List[str], just_embeddings: bool = False
+    ) -> List[List[dict]]:
+        """Predicts labels for sentences.
+
+        Args:
+            sentences (List[str]): List of sentences.
+            just_embeddings (bool, optional): Whether to return just embeddings. Defaults to False.
+
+        Returns:
+            List[List[dict]]: List of list of dicts with labels for each word in sentence.
+        """
         labels = []
         for n_sent, sentence in enumerate(sentences):
             sentence = sentence.split()
@@ -121,15 +161,21 @@ class LSTMBaseline(PreTrainedModel):
 
 class LSTMCollator(DataCollatorMixin):
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Collator for LSTM baseline.
+
+        Args:
+            features (List[Dict[str, Any]]): List of dicts with embeddings and labels.
+
+        Returns:
+            Dict[str, Any]: Dict with embeddings, labels and lengths.
+        """
         embeddings = [f["embeddings"] for f in features]
         labels = [f["label"] for f in features]
 
-        lengths = torch.Tensor([len(l) for l in labels])
+        lengths = torch.Tensor([len(len_) for len_ in labels])
 
         embeddings = pad_sequence(embeddings, batch_first=True)
         labels = pad_sequence(labels, batch_first=True, padding_value=-100)
-
-        # labels = torch.stack(labels)
 
         return {
             "X": embeddings,

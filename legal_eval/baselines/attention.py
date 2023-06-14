@@ -1,6 +1,7 @@
 import math
 from typing import Any, Dict, List
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -16,18 +17,23 @@ from legal_eval.utils import words_to_offsets
 class AttentionBaselineConfig(PretrainedConfig):
     def __init__(
         self,
-        weights=None,
+        weights: np.ndarray = None,
         num_classes: int = 1,
         n_head=5,
         n_layers=1,
-        split_len=64,
         **kwargs,
     ):
+        """
+        Args:
+            weights (np.ndarray, optional): Weights for cross entropy loss. Defaults to None.
+            num_classes (int, optional): Number of classes. Defaults to 1.
+            n_head (int, optional): Number of heads in attention. Defaults to 5.
+            n_layers (int, optional): Number of attention layers. Defaults to 1.
+        """
         self.weights = weights
         self.num_classes = num_classes
         self.n_head = n_head
         self.n_layers = n_layers
-        self.split_len = split_len
         super().__init__(**kwargs)
 
 
@@ -40,7 +46,8 @@ class AttentionBaseline(PreTrainedModel):
     config_class = AttentionBaselineConfig
     FASTTEXT_DIM = 100
 
-    def __init__(self, config):
+    def __init__(self, config: AttentionBaselineConfig):
+        """Creates attention + Positional encoding layer + classification head."""
         super().__init__(config)
 
         self.weights = (
@@ -49,7 +56,6 @@ class AttentionBaseline(PreTrainedModel):
             else None
         )
         self.n_classes = config.num_classes
-        self.split_len = config.split_len
         self.pos_encoder = PositionalEncoding(self.FASTTEXT_DIM, 0)
         self.encoder_layer = nn.TransformerEncoderLayer(
             d_model=self.FASTTEXT_DIM,
@@ -62,7 +68,24 @@ class AttentionBaseline(PreTrainedModel):
         )
         self.classification_head = nn.Linear(self.FASTTEXT_DIM, self.n_classes)
 
-    def forward(self, X, labels=None, attention_mask=None, just_embeddings=False):
+    def forward(
+        self,
+        X: torch.Tensor,
+        labels: torch.Tensor = None,
+        attention_mask: torch.Tensor = None,
+        just_embeddings: bool = False,
+    ):
+        """Forward pass of the model.
+
+        Args:
+            X (torch.Tensor): Embeddings of shape [batch_size, seq_len, embedding_dim]
+            labels (torch.Tensor, optional): Labels of shape [batch_size, seq_len]. Defaults to None.
+            attention_mask (torch.Tensor, optional): Attention mask of shape [batch_size, seq_len]. Defaults to None.
+            just_embeddings (bool, optional): Whether to return just embeddings. Defaults to False.
+
+        Returns:
+            Dict[str, torch.Tensor]: Dict with logits and loss if labels are provided.
+        """
         X = X * math.sqrt(self.FASTTEXT_DIM)
         X = self.pos_encoder(X)
         X = self.transformer_encoder(X, mask=attention_mask)
@@ -78,7 +101,18 @@ class AttentionBaseline(PreTrainedModel):
 
         return {"logits": logits}
 
-    def predict(self, sentences: List[str], just_embeddings=False):
+    def predict(
+        self, sentences: List[str], just_embeddings: bool = False
+    ) -> List[List[dict]]:
+        """Predicts labels for sentences.
+
+        Args:
+            sentences (List[str]): List of sentences.
+            just_embeddings (bool, optional): Whether to return just embeddings. Defaults to False.
+
+        Returns:
+            List[List[dict]]: List of list of dicts with labels for each word in sentence.
+        """
         labels = []
         for n_sent, sentence in enumerate(sentences):
             sentence = sentence.split()
@@ -134,8 +168,7 @@ class PositionalEncoding(nn.Module):
 
 
 class AttentionCollator(DataCollatorMixin):
-    def __init__(self, n_heads=5):
-        self.n_heads = n_heads
+    """Collator for attention model."""
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
         embeddings = [f["embeddings"] for f in features]
