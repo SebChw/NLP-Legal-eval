@@ -1,14 +1,21 @@
 from itertools import chain
 
-from legal_eval.data import download_data, get_hf_dataset, parse_to_ner, cast_ner_labels_to_int
+from legal_eval.data import (
+    download_data,
+    get_hf_dataset,
+)
 from pathlib import Path
 from legal_eval.data import parse_to_ner_custom_tokenizer, _get_unique_ner
-from transformers import AutoTokenizer, AutoModelForTokenClassification, Trainer, TrainingArguments
+from transformers import (
+    AutoTokenizer,
+    AutoModelForTokenClassification,
+    Trainer,
+    TrainingArguments,
+)
 import evaluate
 import numpy as np
 import torch
 from sklearn.utils.class_weight import compute_class_weight
-from legal_eval.utils import get_class_counts
 from legal_eval.data import map_labels_to_numbers_for_tokenizer
 from transformers import DataCollatorForTokenClassification
 
@@ -34,6 +41,7 @@ model = AutoModelForTokenClassification.from_pretrained(
     model_name, num_labels=len(LABELS), id2label=id2label, label2id=label2id
 )
 
+
 def compute_metrics(p):
     predictions, labels = p
     predictions = np.argmax(predictions, axis=2)
@@ -56,7 +64,6 @@ def compute_metrics(p):
     }
 
 
-
 torch.cuda.empty_cache()
 training_args = TrainingArguments(
     output_dir="my_awesome_law_ner_model",
@@ -71,8 +78,11 @@ training_args = TrainingArguments(
     load_best_model_at_end=True,
 )
 
-flattened_y = np.array(list(chain(*dataset_casted["train"]['labels'])))
-CLASS_WEIGHTS = torch.Tensor(compute_class_weight("balanced", classes = np.unique(flattened_y), y=flattened_y))
+flattened_y = np.array(list(chain(*dataset_casted["train"]["labels"])))
+CLASS_WEIGHTS = torch.Tensor(
+    compute_class_weight("balanced", classes=np.unique(flattened_y), y=flattened_y)
+)
+
 
 class ClassWeightedTrainer(Trainer):
     def compute_loss(self, model, inputs):
