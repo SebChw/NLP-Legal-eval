@@ -1,9 +1,14 @@
 from flask import Flask, request, jsonify
 import spacy
 from spacy import displacy
+from legal_eval.constants import DEVICE
 
 app = Flask(__name__)
-nlp = spacy.load('legal_eval/spacy/output/model-best')
+
+if DEVICE == 'cpu':
+    nlp = spacy.load('../legal_eval/spacy/output/model-best')
+else:
+    nlp = spacy.load('../legal_eval/spacy/gpu-RoBERTa/output/model-best')
 
 @app.route('/process_vizualize', methods=['POST'])
 def process_vizualize():
