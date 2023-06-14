@@ -30,6 +30,17 @@ or just
 curl -X POST -H "Content-Type: application/json" -d '{"text": "The next contention revolves around the role of the AICTE and the decision of the Supreme Court in Bharathidasan University."}' http://127.0.0.1:8000/process
 ```
 
+##Docker
+
+You can also use the API without installing anything. Just build and run docker container.
+
+```shell
+docker build  -t legal_eval_gpu .
+docker run --gpus all -p 8000:8000 legal_eval_gpu
+```
+
+Just remember to place your best GPU model in ```/legal_eval/spacy/gpu-RoBERTa/output/model-best``` 
+
 ## Development
 
 To download and load the data
@@ -99,6 +110,28 @@ Run model creation
 from utils import create_fasttext_model
 
 create_fasttext_model(dataset_ner['train'], "legal_eval.bin")
+```
+
+### Preparing labels for transformers
+
+For transformers labels are matched to tokens using the following function. It assigns all tokens in a label interval a label from this interval.
+
+```shell
+from utils import parse_to_ner_custom_tokenizer
+dataset_ner = parse_to_ner_custom_tokenizer(dataset, tokenizer)
+```
+
+### Transformers
+To train distillbert model simply run:
+
+```shell
+python -m legal_eval.transformers.train
+``` 
+
+To test it modify model checkpoint path and run
+
+```shell
+python -m legal_eval.transformers.test
 ```
 
 ### SpaCy models
