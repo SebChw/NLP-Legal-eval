@@ -172,3 +172,4 @@ corpora.txt
 *bin
 
 spacy/gpu-RoBERTa
+*.html
