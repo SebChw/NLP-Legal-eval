@@ -5,13 +5,14 @@ from spacy import displacy
 
 app = Flask(__name__)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-if device == "cpu":
-    nlp = spacy.load("../legal_eval/spacy/output/model-best")
-else:
-    spacy.require_gpu()
-    nlp = spacy.load("../legal_eval/spacy/gpu-RoBERTa/output/model-best")
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# if device == "cpu":
+#     nlp = spacy.load("../legal_eval/spacy/output/model-best")
+# else:
+#     spacy.require_gpu()
+#     nlp = spacy.load("../legal_eval/spacy/gpu-RoBERTa/output/model-best")
 
+nlp = spacy.load("../legal_eval/spacy/output/model-best")
 
 @app.route("/process_vizualize", methods=["POST"])
 def process_vizualize():
