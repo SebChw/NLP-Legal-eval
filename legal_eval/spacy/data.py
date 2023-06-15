@@ -5,7 +5,7 @@ import spacy
 
 def get_data(split="train") -> list:
     """Returns a list of tuples of the form (text, entities)"""
-    dataset = get_hf_dataset()
+    dataset = get_hf_dataset("../data")
     data = []
     for example in dataset[split]:
         text = example["text"]
