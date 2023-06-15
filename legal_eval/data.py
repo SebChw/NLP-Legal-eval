@@ -1,12 +1,12 @@
 import zipfile
 from io import BytesIO
 from pathlib import Path
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Any
 
 import requests
 from datasets import ClassLabel, DatasetDict, Features, Sequence, Value, load_dataset
 from tokenizers.pre_tokenizers import WhitespaceSplit
-from transformers import PreTrainedTokenizer
+from transformers import AutoTokenizer
 
 from legal_eval.constants import (
     DEV_JUDG,
@@ -36,7 +36,7 @@ def download_data(data_path: Path, force_download: bool = False) -> None:
 
 
 def get_hf_dataset(
-    data_path: Path, columns_to_remove: List[str] = ["id", "meta"]
+    data_path: Any, columns_to_remove: List[str] = ["id", "meta"]
 ) -> DatasetDict:
     """Given path to Legal Eval data build HuggingFace datasetDict object
 
@@ -134,7 +134,7 @@ def parse_to_ner(dataset: DatasetDict) -> DatasetDict:
     return dataset.map(get_labels, remove_columns=["text", "annotations"])
 
 
-def parse_to_ner_custom_tokenizer(dataset: DatasetDict, tokenizer: PreTrainedTokenizer) -> DatasetDict:
+def parse_to_ner_custom_tokenizer(dataset: DatasetDict, tokenizer: AutoTokenizer) -> DatasetDict:
     """Parses the dataset to a more user friendly NER format insted of nested JSON annotations
 
     Args:

@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Any
 
 class Dataset(dict):
     @property
@@ -8,10 +8,10 @@ class Dataset(dict):
         self,
         func,
         remove_columns: List[str],
-        batch_size,
-        batched,
-        fn_kwargs,
-        load_from_cache_file,
+        batch_size :Optional[Any] = None,
+        batched :Optional[Any] = None,
+        fn_kwargs :Optional[Any] = None,
+        load_from_cache_file :Optional[Any] = None,
     ): ...
     def set_format(self, format: str, columns: List[str]): ...
     def select(
@@ -26,7 +26,7 @@ class DatasetDict(dict):
     def __init__(self, splits: Dict[str, Dataset]): ...
     def remove_columns(self, columns: List[str]): ...
     def map(
-        self, func, remove_columns: List[str], batched, fn_kwargs, load_from_cache_file
+        self, func, remove_columns: List[str], batched :Optional[Any] = None, fn_kwargs :Optional[Any] = None, load_from_cache_file :Optional[Any] = None
     ): ...
     def cast(self, features: Features): ...
     def set_format(self, format: str, columns: List[str]): ...
