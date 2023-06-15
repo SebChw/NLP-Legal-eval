@@ -1,12 +1,22 @@
+from typing import Dict
+
 import numpy as np
 import torch
 from transformers import Trainer
 import pandas as pd
 
 
-def get_compute_metric_function(id2label, seqeval):
+def get_compute_metric_function(id2label: Dict, seqeval: object):
     """Returns a function that can be used as the compute_metrics argument to the Trainer class.
-    The function takes in a tuple of predictions and labels and returns a dictionary of metrics."""
+    The function takes in a tuple of predictions and labels and returns a dictionary of metrics.
+
+    Args:
+        id2label (Dict): Dictionary mapping label ids to labels.
+        seqeval (seqeval.metrics): Seqeval metrics class.
+
+    Returns:
+        function: Function that can be used as the compute_metrics argument to the Trainer class.
+    """
 
     def compute_metrics(p):
         predictions, labels = p
@@ -43,6 +53,14 @@ def get_compute_metric_function(id2label, seqeval):
 
 
 def results_to_dataframe(results):
+    """
+    Convert the output of the compute_metrics function to a DataFrame.
+    Args:
+        results: Output of the compute_metrics function.
+
+    Returns:
+        pd.DataFrame: DataFrame with evaluation results.
+    """
     # Initialize an empty dictionary to store metric data
     metrics_data = {
         "accuracy": {},
@@ -66,7 +84,23 @@ def results_to_dataframe(results):
 
 
 class ClassWeightedTrainer(Trainer):
-    """Trainer class that uses class weights for the loss function."""
+    """Trainer class that uses class weights for the loss function.
+    The class weights are passed in as a tensor of shape (num_classes,).
+
+    Args:
+        class_weights (torch.Tensor): Tensor of shape (num_classes,).
+
+    Example:
+
+        flattened_y = np.array(list(chain(*dataset_casted["train"]["labels"])))
+        CLASS_WEIGHTS = torch.Tensor(
+            compute_class_weight("balanced", classes=np.unique(flattened_y), y=flattened_y)
+        )
+        CLASS_WEIGHTS = CLASS_WEIGHTS.to(device)
+        trainer = ClassWeightedTrainer(
+            class_weights=CLASS_WEIGHTS,
+            ...)
+    """
     def __init__(self, class_weights, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.class_weights = class_weights

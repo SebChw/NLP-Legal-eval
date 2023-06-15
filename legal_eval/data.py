@@ -6,6 +6,7 @@ from typing import Dict, List, Set
 import requests
 from datasets import ClassLabel, DatasetDict, Features, Sequence, Value, load_dataset
 from tokenizers.pre_tokenizers import WhitespaceSplit
+from transformers import PreTrainedTokenizer
 
 from legal_eval.constants import (
     DEV_JUDG,
@@ -133,11 +134,12 @@ def parse_to_ner(dataset: DatasetDict) -> DatasetDict:
     return dataset.map(get_labels, remove_columns=["text", "annotations"])
 
 
-def parse_to_ner_custom_tokenizer(dataset: DatasetDict, tokenizer) -> DatasetDict:
+def parse_to_ner_custom_tokenizer(dataset: DatasetDict, tokenizer: PreTrainedTokenizer) -> DatasetDict:
     """Parses the dataset to a more user friendly NER format insted of nested JSON annotations
 
     Args:
         dataset (DatasetDict): HuggingFace DatasetDict object with train and test splits
+        tokenizer (PreTrainedTokenizer): tokenizer to use
 
     Returns:
         dataset (DatasetDict): parsed dataset, with `tokens` and `ner_tags` columns

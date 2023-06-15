@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence, pad_sequence
+from torch.nn.utils.rnn import pack_padded_sequence, pad_sequence
 from transformers import PretrainedConfig, PreTrainedModel
 from transformers.data.data_collator import DataCollatorMixin
 
