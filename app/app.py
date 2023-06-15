@@ -1,5 +1,5 @@
 import torch
-from flask import Flask, request, jsonify, render_template, make_response
+from flask import Flask, request, jsonify, render_template
 import spacy
 from spacy import displacy
 
@@ -38,6 +38,7 @@ def process():
             ],
         }
     )
+
 
 @app.route("/", methods=["GET"])
 def index():
