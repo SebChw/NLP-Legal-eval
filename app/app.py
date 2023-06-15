@@ -12,6 +12,7 @@ else:
     spacy.require_gpu()
     nlp = spacy.load("../legal_eval/spacy/gpu-RoBERTa/output/model-best")
 
+
 @app.route("/process_vizualize", methods=["POST"])
 def process_vizualize():
     data = request.json
